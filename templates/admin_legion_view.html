@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <title>آمار لژیون {{ guide.name }}</title>
+</head>
+<body style="direction: rtl; font-family: Tahoma; margin: 20px;">
+    <h1 style="text-align: center;">آمار لژیون راهنما: {{ guide.name }}</h1>
+    <p style="text-align: center;"><a href="{{ url_for('admin_dashboard') }}">بازگشت به پنل ادمین</a></p>
+    <hr>
+
+    <div style="max-width: 800px; margin: 20px auto; padding: 20px; border: 1px solid #0056b3; border-radius: 8px; background-color: #f0f8ff;">
+        <h3>آمار کلی</h3>
+        <p><strong>مجموع سی‌دی‌های نوشته شده توسط راهنما:</strong> {{ total_guide_cds }}</p>
+        <p><strong>آمار رهجویان:</strong></p>
+        <ul>
+            {% for stat in journey_stats %}
+                <li>{{ stat.journey_type }}: {{ stat.count }} نفر</li>
+            {% else %}
+                <li>هنوز رهجویی برای این راهنما ثبت نشده است.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div style="max-width: 800px; margin: 20px auto;">
+        <h3>آخرین سوابق حضور و غیاب لژیون</h3>
+        <table style="width: 100%; border-collapse: collapse; text-align: center;">
+            <thead>
+                <tr style="background-color: #f2f2f2;">
+                    <th style="padding: 10px; border: 1px solid #ddd;">نام رهجو</th>
+                    <th style="padding: 10px; border: 1px solid #ddd;">تاریخ</th>
+                    <th style="padding: 10px; border: 1px solid #ddd;">وضعیت</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in mentees_attendance %}
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{{ record.name }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{{ record.session_date }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{{ record.status }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" style="padding: 20px;">هیچ سابقه‌ای برای این لژیون ثبت نشده است.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

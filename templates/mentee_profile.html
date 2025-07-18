@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <title>پروفایل رهجو</title>
+</head>
+<body style="direction: rtl; font-family: Tahoma; margin: 20px;">
+    <h1 style="text-align: center;">پروفایل رهجو</h1>
+
+    <div style="max-width: 800px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+        <h2>{{ mentee.name }}</h2>
+        <p><strong>کد کنگره:</strong> {{ mentee.congress_code or 'ثبت نشده' }}</p>
+        <p><strong>نوع سفر:</strong> {{ mentee.journey_type or 'ثبت نشده' }}</p>
+    </div>
+
+    <hr style="margin: 30px 0;">
+
+    <div style="max-width: 800px; margin: auto;">
+        <h3 style="text-align: center;">تاریخچه حضور و غیاب</h3>
+        <table style="width: 100%; border-collapse: collapse; text-align: center;">
+            <thead>
+                <tr style="background-color: #f2f2f2;">
+                    <th style="padding: 10px; border: 1px solid #ddd;">تاریخ جلسه</th>
+                    <th style="padding: 10px; border: 1px solid #ddd;">وضعیت</th>
+                    <th style="padding: 10px; border: 1px solid #ddd;">ساعت ثبت</th>
+                    <th style="padding: 10px; border: 1px solid #ddd;">ویرایش</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in attendance_history %}
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{{ record.session_date }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{{ record.status }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{{ record.session_time or '---' }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">
+                        <a href="{{ url_for('edit_attendance', attendance_id=record.id) }}">ویرایش</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" style="padding: 20px; text-align: center;">هیچ سابقه‌ای برای این رهجو ثبت نشده است.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="{{ url_for('dashboard') }}">بازگشت به داشبورد</a>
+        </div>
+    </div>
+
+</body>
+</html>

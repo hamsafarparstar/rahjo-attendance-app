@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <title>پنل ادمین</title>
+</head>
+<body style="direction: rtl; font-family: Tahoma; margin: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 20px;">
+        <h1>پنل مدیریت</h1>
+        <a href="{{ url_for('logout') }}">خروج</a>
+    </div>
+    <hr>
+
+    <div style="margin-bottom: 30px; border: 1px solid #28a745; padding: 15px; max-width: 600px; margin: 20px auto; border-radius: 8px; background-color: #e9f5ec;">
+        <h3>افزودن راهنمای جدید</h3>
+        <form action="{{ url_for('admin_add_guide') }}" method="post">
+            <div style="margin-bottom: 10px;">
+                <label>نام کامل راهنما:</label>
+                <input type="text" name="name" required>
+            </div>
+            <div style="margin-bottom: 10px;">
+                <label>نام کاربری (برای لاگین):</label>
+                <input type="text" name="username" required>
+            </div>
+            <div style="margin-bottom: 10px;">
+                <label>رمز عبور:</label>
+                <input type="password" name="password" required>
+            </div>
+            <button type="submit">ثبت راهنمای جدید</button>
+        </form>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <p style="color: {% if category == 'success' %}green{% else %}red{% endif %}; font-weight: bold; margin-top: 10px;">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <hr>
+
+    <h2 style="text-align: center;">لیست راهنماها</h2>
+    <table style="width: 80%; margin: auto; border-collapse: collapse; text-align: center;">
+        <thead>
+            <tr style="background-color: #f2f2f2;">
+                <th style="padding: 10px; border: 1px solid #ddd;">نام راهنما</th>
+                <th style="padding: 10px; border: 1px solid #ddd;">مشاهده آمار لژیون</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for guide in guides %}
+            <tr>
+                <td style="padding: 10px; border: 1px solid #ddd;">{{ guide.name }}</td>
+                <td style="padding: 10px; border: 1px solid #ddd;">
+                    <a href="{{ url_for('admin_legion_view', guide_id=guide.id) }}">مشاهده جزئیات</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="2" style="padding: 20px;">هیچ راهنمایی ثبت نشده است.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

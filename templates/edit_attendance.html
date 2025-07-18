@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <title>ویرایش سابقه</title>
+    <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css"/>
+</head>
+<body style="direction: rtl; font-family: Tahoma; text-align: center; margin-top: 50px;">
+    <h2>ویرایش سابقه حضور و غیاب</h2>
+    <hr>
+    <form action="{{ url_for('update_attendance', attendance_id=attendance.id) }}" method="post">
+        <div style="max-width: 400px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+            <p><strong>تاریخ جلسه:</strong></p>
+            <input type="text" name="session_date" class="jalali-datepicker" value="{{ attendance.session_date }}" required>
+            <p><strong>ساعت جلسه:</strong></p>
+            <input type="time" name="session_time" value="{{ attendance.session_time or '' }}">
+            <p><strong>وضعیت:</strong></p>
+            <div>
+                <input type="radio" name="status" value="حاضر" id="present" {% if attendance.status == 'حاضر' %}checked{% endif %}>
+                <label for="present">حاضر</label>
+                <input type="radio" name="status" value="غایب" id="absent" {% if attendance.status == 'غایب' %}checked{% endif %}>
+                <label for="absent">غایب</label>
+                <input type="radio" name="status" value="تاخیر" id="late" {% if attendance.status == 'تاخیر' %}checked{% endif %}>
+                <label for="late">تاخیر</label>
+            </div>
+            <br>
+            <button type="submit" style="padding: 10px 20px;">ذخیره تغییرات</button>
+            <a href="{{ url_for('dashboard') }}" style="display: inline-block; margin-top: 10px;">انصراف</a>
+        </div>
+    </form>
+    <script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
+    <script src="https://unpkg.com/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+    <script type="text/javascript">
+        new persianDatepicker(document.querySelector(".jalali-datepicker"), {
+            format: 'YYYY-MM-DD',
+            autoClose: true
+        });
+    </script>
+</body>
+</html>

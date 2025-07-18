@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <title>داشبورد راهنما</title>
+    <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css"/>
+</head>
+<body style="direction: rtl; font-family: Tahoma; text-align: center; margin-top: 50px;">
+
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 20px;">
+        <h2>داشبورد: خوش آمدی {{ guide_name }}!</h2>
+        <a href="{{ url_for('logout') }}">خروج</a>
+    </div>
+
+    <hr>
+
+    <h4>ثبت رهجوی جدید:</h4>
+    <form action="{{ url_for('add_mentee') }}" method="post" style="margin-bottom: 20px; border: 1px solid #ddd; padding: 15px; max-width: 500px; margin: auto; border-radius: 8px;">
+        <div style="margin-bottom: 10px;">
+            <label>نام رهجو: </label>
+            <input type="text" name="mentee_name" required>
+        </div>
+
+        <div style="margin-bottom: 10px;">
+            <label>وضعیت کد کنگره: </label>
+            <select id="congress_code_status" onchange="toggleCongressCodeInput()">
+                <option value="not_issued">صادر نشده</option>
+                <option value="enter_code">ثبت کد</option>
+            </select>
+        </div>
+
+        <div id="congress_code_input_div" style="display: none; margin-bottom: 10px;">
+            <label>کد کنگره را وارد کنید: </label>
+            <input type="text" name="congress_code">
+        </div>
+
+        <div style="margin-bottom: 10px;">
+            <label>نوع سفر: </label>
+            <select name="journey_type">
+                <option value="سفر اولی">سفر اولی</option>
+                <option value="سفر دومی">سفر دومی</option>
+            </select>
+        </div>
+        <button type="submit">افزودن رهجو</button>
+    </form>
+
+    <hr>
+
+    <h3>ثبت حضور و غیاب ({{ today_shamsi_date }}):</h3>
+    {% if mentees %}
+        {% for mentee in mentees %}
+            <div style="border: 1px solid #ccc; margin: 10px auto; padding: 15px; max-width: 700px; border-radius: 8px;">
+                <div style="margin-bottom: 10px; font-size: 1.1em;">
+                    <a href="{{ url_for('mentee_profile', mentee_id=mentee.id) }}">
+                        <strong>{{ mentee.name }}</strong>
+                    </a>
+                    <small style="color: #555;"> (کد: {{ mentee.congress_code or 'ثبت نشده' }} - {{ mentee.journey_type or 'ثبت نشده' }})</small>
+                </div>
+
+                {% if mentee.status %}
+                    <div style="display: flex; justify-content: space-around; align-items: center;">
+                        <p style="color: green; font-weight: bold; margin: 0;">
+                            ثبت شده: {{ mentee.status }}
+                            {% if mentee.session_time %}
+                                - ساعت {{ mentee.session_time }}
+                            {% endif %}
+                        </p>
+                        <a href="{{ url_for('edit_attendance', attendance_id=mentee.attendance_id) }}">(ویرایش)</a>
+                    </div>
+                {% else %}
+                    <form action="{{ url_for('record_attendance') }}" method="post" style="display: flex; justify-content: space-around; align-items: center;">
+                        <input type="hidden" name="mentee_id" value="{{ mentee.id }}">
+                        <input type="text" name="session_date" class="jalali-datepicker" value="{{ today_shamsi_date }}" required>
+                        <input type="time" name="session_time">
+                        <div>
+                            <input type="radio" name="status" value="حاضر" id="present_{{ mentee.id }}" checked> <label for="present_{{ mentee.id }}">حاضر</label>
+                            <input type="radio" name="status" value="غایب" id="absent_{{ mentee.id }}"> <label for="absent_{{ mentee.id }}">غایب</label>
+                        </div>
+                        <button type="submit">ثبت</button>
+                    </form>
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>شما در حال حاضر هیچ رهجویی ندارید.</p>
+    {% endif %}
+
+    <script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
+    <script src="https://unpkg.com/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+    <script type="text/javascript">
+        // کد فعال‌سازی برای همه تقویم‌های صفحه
+        var datepickers = document.querySelectorAll(".jalali-datepicker");
+        for (var i = 0; i < datepickers.length; i++) {
+            new persianDatepicker(datepickers[i], {
+                format: 'YYYY-MM-DD',
+                autoClose: true
+            });
+        }
+
+        // کد جدید برای نمایش/مخفی کردن فیلد کد کنگره
+        function toggleCongressCodeInput() {
+            var statusSelect = document.getElementById("congress_code_status");
+            var inputDiv = document.getElementById("congress_code_input_div");
+            var inputField = inputDiv.querySelector("input[name='congress_code']");
+
+            if (statusSelect.value === "enter_code") {
+                inputDiv.style.display = "block";
+                // وقتی نمایش داده میشه، مقدار پیش‌فرض رو پاک می‌کنیم تا کاربر وارد کنه
+                inputField.value = "";
+            } else {
+                inputDiv.style.display = "none";
+                // وقتی مخفی میشه، مقدار "صادر نشده" رو براش ست می‌کنیم
+                inputField.value = "صادر نشده";
+            }
+        }
+        // برای اینکه موقع بارگذاری صفحه، وضعیت اولیه درست باشه، تابع رو یکبار صدا می‌زنیم
+        window.onload = toggleCongressCodeInput;
+    </script>
+</body>
+</html>
