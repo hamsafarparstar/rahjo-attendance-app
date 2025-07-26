@@ -9,12 +9,13 @@ from werkzeug.security import check_password_hash, generate_password_hash
 import jdatetime
 from datetime import datetime, time
 from functools import wraps
-import psycopg2.extras # برای کار با دیکشنری‌ها
+import psycopg2.extras  # برای کار با دیکشنری‌ها
 
 # --- ساخت اپلیکیشن فلسک ---
 app = Flask(__name__)
 # کلید مخفی برای امنیت سشن‌ها از متغیرهای محیطی سرور خوانده می‌شود
 app.secret_key = os.environ.get('SECRET_KEY', 'a_default_secret_key_for_local_development')
+
 
 # --- توابع کمکی ---
 def get_db_connection():
@@ -32,20 +33,25 @@ def get_db_connection():
     )
     return conn
 
+
 def admin_required(f):
     """یک دکوراتور برای اینکه مطمئن شویم فقط ادمین به یک صفحه دسترسی دارد."""
+
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session.get('is_admin'):
             flash("برای دسترسی به این صفحه باید ادمین باشید.", "error")
             return redirect(url_for('login'))
         return f(*args, **kwargs)
+
     return decorated_function
+
 
 # --- روت‌های عمومی ---
 @app.route('/')
 def home():
     return redirect(url_for('login'))
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -72,11 +78,13 @@ def login():
             return redirect(url_for('login'))
     return render_template('login.html')
 
+
 @app.route('/logout')
 def logout():
     session.clear()
     flash("شما با موفقیت خارج شدید.", "success")
     return redirect(url_for('login'))
+
 
 # --- روت‌های داشبورد راهنمای عادی ---
 @app.route('/dashboard')
@@ -100,22 +108,47 @@ def dashboard():
     total_guide_cds = total_cds_result['total'] if total_cds_result and total_cds_result['total'] is not None else 0
     cursor.close()
     conn.close()
-    return render_template('dashboard.html', guide_name=session['guide_name'], mentees=mentees_data, today_shamsi_date=today_shamsi_date, guide_cds_history=guide_cds_history, total_guide_cds=total_guide_cds)
+    return render_template('dashboard.html', guide_name=session['guide_name'], mentees=mentees_data,
+                           today_shamsi_date=today_shamsi_date, guide_cds_history=guide_cds_history,
+                           total_guide_cds=total_guide_cds)
+
 
 @app.route('/add_mentee', methods=['POST'])
 def add_mentee():
     if 'guide_id' not in session: return redirect(url_for('login'))
+
     mentee_name = request.form['mentee_name']
-    congress_code = request.form.get('congress_code', 'صادر نشده')
+    # .strip() برای حذف فاصله‌های اضافی احتمالی از ابتدا و انتهای کد است
+    congress_code = request.form.get('congress_code', 'صادر نشده').strip()
     journey_type = request.form.get('journey_type')
     guide_id = session['guide_id']
+
+    # --- بخش جدید برای چک کردن یکتا بودن کد کنگره ---
+    # فقط کدهایی که واقعی هستند (خالی نیستند و "صادر نشده" نیستند) را چک می‌کنیم
+    if congress_code and congress_code != 'صادر نشده':
+        conn_check = get_db_connection()
+        cursor_check = conn_check.cursor()
+        cursor_check.execute('SELECT id FROM mentees WHERE congress_code = %s', (congress_code,))
+        existing_mentee = cursor_check.fetchone()
+        cursor_check.close()
+        conn_check.close()
+
+        if existing_mentee:
+            flash(f"کد کنگره '{congress_code}' قبلا برای رهجوی دیگری ثبت شده است.", "error")
+            return redirect(url_for('dashboard'))
+
+    # اگر کد تکراری نبود، رهجو را اضافه کن
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('INSERT INTO mentees (name, congress_code, journey_type, guide_id) VALUES (%s, %s, %s, %s)', (mentee_name, congress_code, journey_type, guide_id))
+    cursor.execute('INSERT INTO mentees (name, congress_code, journey_type, guide_id) VALUES (%s, %s, %s, %s)',
+                   (mentee_name, congress_code, journey_type, guide_id))
     conn.commit()
     cursor.close()
     conn.close()
+
+    flash(f"رهجوی جدید '{mentee_name}' با موفقیت ثبت شد.", "success")
     return redirect(url_for('dashboard'))
+
 
 @app.route('/record_attendance', methods=['POST'])
 def record_attendance():
@@ -132,17 +165,22 @@ def record_attendance():
     if session_time_str and status == 'حاضر':
         try:
             session_time_obj = time.fromisoformat(session_time_str)
-            if weekday == 3 and session_time_obj > time(14, 0): status = 'تاخیر'
-            elif weekday == 5 and session_time_obj > time(17, 0): status = 'تاخیر'
-        except ValueError: pass
+            if weekday == 3 and session_time_obj > time(14, 0):
+                status = 'تاخیر'
+            elif weekday == 5 and session_time_obj > time(17, 0):
+                status = 'تاخیر'
+        except ValueError:
+            pass
     if weekday not in [3, 5]: return "ثبت حضور و غیاب فقط برای روزهای شنبه و پنجشنبه امکان‌پذیر است."
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('INSERT INTO attendance (mentee_id, session_date, status, session_time) VALUES (%s, %s, %s, %s)', (mentee_id, session_date_str, status, session_time_str))
+    cursor.execute('INSERT INTO attendance (mentee_id, session_date, status, session_time) VALUES (%s, %s, %s, %s)',
+                   (mentee_id, session_date_str, status, session_time_str))
     conn.commit()
     cursor.close()
     conn.close()
     return redirect(url_for('dashboard'))
+
 
 @app.route('/record_guide_cds', methods=['POST'])
 def record_guide_cds():
@@ -153,11 +191,13 @@ def record_guide_cds():
     if cd_count > 0:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute('INSERT INTO guide_cds (guide_id, record_date, cd_count) VALUES (%s, %s, %s)', (guide_id, record_date, cd_count))
+        cursor.execute('INSERT INTO guide_cds (guide_id, record_date, cd_count) VALUES (%s, %s, %s)',
+                       (guide_id, record_date, cd_count))
         conn.commit()
         cursor.close()
         conn.close()
     return redirect(url_for('dashboard'))
+
 
 @app.route('/edit_attendance/<int:attendance_id>')
 def edit_attendance(attendance_id):
@@ -171,6 +211,7 @@ def edit_attendance(attendance_id):
     if not attendance_record: return "رکورد پیدا نشد!", 404
     return render_template('edit_attendance.html', attendance=attendance_record)
 
+
 @app.route('/update_attendance/<int:attendance_id>', methods=['POST'])
 def update_attendance(attendance_id):
     if 'guide_id' not in session: return redirect(url_for('login'))
@@ -180,21 +221,27 @@ def update_attendance(attendance_id):
     try:
         gregorian_date = jdatetime.datetime.strptime(session_date_str, '%Y-%m-%d').togregorian()
         weekday = gregorian_date.weekday()
-    except ValueError: return "فرمت تاریخ اشتباه است."
+    except ValueError:
+        return "فرمت تاریخ اشتباه است."
     if session_time_str and status == 'حاضر':
         try:
             session_time_obj = time.fromisoformat(session_time_str)
-            if weekday == 3 and session_time_obj > time(14, 0): status = 'تاخیر'
-            elif weekday == 5 and session_time_obj > time(17, 0): status = 'تاخیر'
-        except ValueError: pass
+            if weekday == 3 and session_time_obj > time(14, 0):
+                status = 'تاخیر'
+            elif weekday == 5 and session_time_obj > time(17, 0):
+                status = 'تاخیر'
+        except ValueError:
+            pass
     if weekday not in [3, 5]: return "ثبت حضور و غیاب فقط برای روزهای شنبه و پنجشنبه امکان‌پذیر است."
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('UPDATE attendance SET session_date = %s, status = %s, session_time = %s WHERE id = %s', (session_date_str, status, session_time_str, attendance_id))
+    cursor.execute('UPDATE attendance SET session_date = %s, status = %s, session_time = %s WHERE id = %s',
+                   (session_date_str, status, session_time_str, attendance_id))
     conn.commit()
     cursor.close()
     conn.close()
     return redirect(url_for('dashboard'))
+
 
 @app.route('/mentee/<int:mentee_id>')
 def mentee_profile(mentee_id):
@@ -213,6 +260,7 @@ def mentee_profile(mentee_id):
     conn.close()
     return render_template('mentee_profile.html', mentee=mentee, attendance_history=attendance_history)
 
+
 # --- بخش روت‌های پنل ادمین ---
 @app.route('/admin/dashboard')
 @admin_required
@@ -224,6 +272,7 @@ def admin_dashboard():
     cursor.close()
     conn.close()
     return render_template('admin_dashboard.html', guides=guides)
+
 
 @app.route('/admin/add_guide', methods=['POST'])
 @admin_required
@@ -238,7 +287,8 @@ def admin_add_guide():
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute('INSERT INTO guides (name, username, password, is_admin) VALUES (%s, %s, %s, FALSE)', (name, username, hashed_password))
+        cursor.execute('INSERT INTO guides (name, username, password, is_admin) VALUES (%s, %s, %s, FALSE)',
+                       (name, username, hashed_password))
         conn.commit()
         flash(f"راهنمای جدید '{name}' با موفقیت ثبت شد.", "success")
     except psycopg2.IntegrityError:
@@ -248,6 +298,7 @@ def admin_add_guide():
         cursor.close()
         conn.close()
     return redirect(url_for('admin_dashboard'))
+
 
 @app.route('/admin/legion/<int:guide_id>')
 @admin_required
@@ -259,7 +310,8 @@ def admin_legion_view(guide_id):
     cursor.execute('SELECT SUM(cd_count) as total FROM guide_cds WHERE guide_id = %s', (guide_id,))
     total_cds_result = cursor.fetchone()
     total_guide_cds = total_cds_result['total'] if total_cds_result and total_cds_result['total'] is not None else 0
-    cursor.execute("SELECT journey_type, COUNT(id) as count FROM mentees WHERE guide_id = %s GROUP BY journey_type", (guide_id,))
+    cursor.execute("SELECT journey_type, COUNT(id) as count FROM mentees WHERE guide_id = %s GROUP BY journey_type",
+                   (guide_id,))
     journey_stats = cursor.fetchall()
     cursor.execute("""
         SELECT m.name, a.session_date, a.status 
@@ -269,7 +321,9 @@ def admin_legion_view(guide_id):
     mentees_attendance = cursor.fetchall()
     cursor.close()
     conn.close()
-    return render_template('admin_legion_view.html', guide=guide, total_guide_cds=total_guide_cds, journey_stats=journey_stats, mentees_attendance=mentees_attendance)
+    return render_template('admin_legion_view.html', guide=guide, total_guide_cds=total_guide_cds,
+                           journey_stats=journey_stats, mentees_attendance=mentees_attendance)
+
 
 # --- اجرای برنامه ---
 if __name__ == '__main__':
