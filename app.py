@@ -253,7 +253,6 @@ def update_attendance(attendance_id):
     session_date_str = request.form['session_date']
     status = request.form['status']
     session_time_str = request.form.get('session_time')
-    # منطق تاخیر اینجا هم لازم است
     try:
         gregorian_date = jdatetime.datetime.strptime(session_date_str, '%Y-%m-%d').togregorian()
         weekday = gregorian_date.weekday()
